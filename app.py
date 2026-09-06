@@ -8,7 +8,10 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-from auth import load_users, save_users, register_user, login_user, generate_otp, verify_otp
+from auth import (
+    load_users, save_users, register_user, login_user, generate_otp, verify_otp,
+    generate_email_code, verify_email,
+)
 from accounts import (
     deposit, transfer_own, transfer_other, pay_bill,
     charge_credit_card, pay_credit_card,
@@ -32,6 +35,7 @@ def init_session():
         "page": "Dashboard",
         "pending_action": None,   # holds details of an action awaiting OTP
         "otp_stage": False,
+        "pending_verification": None,  # username awaiting email confirmation
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -66,15 +70,51 @@ def login_screen():
                 st.error(message)
 
     with tab_register:
-        new_username = st.text_input("Choose a username", key="reg_username")
-        new_password = st.text_input("Choose a password", type="password", key="reg_password")
-        if st.button("Create Account"):
+        if st.session_state.pending_verification:
+            email_confirm_screen()
+        else:
+            new_username = st.text_input("Choose a username", key="reg_username")
+            new_email = st.text_input("Email address", key="reg_email")
+            new_password = st.text_input("Choose a password", type="password", key="reg_password")
+            confirm_password = st.text_input("Confirm password", type="password", key="reg_confirm_password")
+            if st.button("Create Account"):
+                users = load_users()
+                success, message = register_user(
+                    users, new_username, new_password, confirm_password, new_email
+                )
+                if success:
+                    code = generate_email_code(users, new_username)
+                    st.session_state.pending_verification = new_username
+                    st.session_state.demo_email_code = code  # demo-only, for on-screen display
+                    st.rerun()
+                else:
+                    st.error(message)
+
+
+def email_confirm_screen():
+    """Simulated email confirmation step shown right after registration."""
+    username = st.session_state.pending_verification
+    st.info(f"A confirmation code was sent to the email for **{username}**.")
+    st.caption(f"(Demo mode: your confirmation code is {st.session_state.demo_email_code} "
+               f"— valid for 5 minutes)")
+
+    entered_code = st.text_input("Enter the 6-digit confirmation code", max_chars=6, key="email_code_input")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("Verify Email", type="primary"):
             users = load_users()
-            success, message = register_user(users, new_username, new_password)
+            success, message = verify_email(users, username, entered_code)
             if success:
+                st.session_state.pending_verification = None
                 st.success(message)
             else:
                 st.error(message)
+
+    with col2:
+        if st.button("Cancel Registration"):
+            st.session_state.pending_verification = None
+            st.rerun()
 
 
 # ---------------------------------------------------------------------------
