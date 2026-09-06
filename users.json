@@ -1,0 +1,110 @@
+{
+  "alice": {
+    "password_hash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "failed_attempts": 0,
+    "locked": false,
+    "accounts": {
+      "checking": {
+        "balance": 2600.0
+      },
+      "savings": {
+        "balance": 8000.0
+      },
+      "credit_card": {
+        "limit": 3000.0,
+        "owed": 450.0,
+        "due_date": "2026-09-25"
+      }
+    },
+    "transactions": [
+      {
+        "date": "2026-09-01T09:00:00",
+        "type": "deposit",
+        "category": "income",
+        "amount": 4000.0,
+        "account": "checking",
+        "status": "success"
+      },
+      {
+        "date": "2026-09-03T14:30:00",
+        "type": "bill_payment",
+        "category": "utilities",
+        "amount": 150.0,
+        "account": "checking",
+        "status": "success"
+      },
+      {
+        "date": "2026-09-04T11:15:00",
+        "type": "credit_card_charge",
+        "category": "shopping",
+        "amount": 300.0,
+        "account": "credit_card",
+        "status": "success"
+      },
+      {
+        "date": "2026-09-05T16:45:00",
+        "type": "transfer_other",
+        "category": "transfer",
+        "amount": 200.0,
+        "account": "checking",
+        "status": "success"
+      },
+      {
+        "date": "2026-09-06T10:00:00",
+        "type": "bill_payment",
+        "category": "subscription",
+        "amount": 45.0,
+        "account": "checking",
+        "status": "success"
+      }
+    ],
+    "otp": null,
+    "otp_expiry": null
+  },
+  "bob": {
+    "password_hash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "failed_attempts": 0,
+    "locked": false,
+    "accounts": {
+      "checking": {
+        "balance": 1200.0
+      },
+      "savings": {
+        "balance": 3000.0
+      },
+      "credit_card": {
+        "limit": 1500.0,
+        "owed": 900.0,
+        "due_date": "2026-09-18"
+      }
+    },
+    "transactions": [
+      {
+        "date": "2026-09-02T09:00:00",
+        "type": "deposit",
+        "category": "income",
+        "amount": 1500.0,
+        "account": "checking",
+        "status": "success"
+      },
+      {
+        "date": "2026-09-04T13:00:00",
+        "type": "credit_card_charge",
+        "category": "shopping",
+        "amount": 400.0,
+        "account": "credit_card",
+        "status": "success"
+      },
+      {
+        "date": "2026-09-05T18:20:00",
+        "type": "bill_payment",
+        "category": "utilities",
+        "amount": 200.0,
+        "account": "checking",
+        "status": "success"
+      }
+    ],
+    "otp": null,
+    "otp_expiry": null
+  }
+}
