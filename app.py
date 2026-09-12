@@ -75,8 +75,8 @@ def login_screen():
         else:
             new_username = st.text_input("Choose a username", key="reg_username")
             new_email = st.text_input("Email address", key="reg_email")
-            new_phone = st.text_input("Phone number (optional, simulated only)", key="reg_phone")
-            new_address = st.text_input("Home address (optional, simulated only)", key="reg_address")
+            new_phone = st.text_input("Phone number (optional)", key="reg_phone")
+            new_address = st.text_input("Home address (optional)", key="reg_address")
             new_password = st.text_input("Choose a password", type="password", key="reg_password")
             confirm_password = st.text_input("Confirm password", type="password", key="reg_confirm_password")
             if st.button("Create Account"):
@@ -98,8 +98,7 @@ def email_confirm_screen():
     """Simulated email confirmation step shown right after registration."""
     username = st.session_state.pending_verification
     st.info(f"A confirmation code was sent to the email for **{username}**.")
-    st.caption(f"(Demo mode: your confirmation code is {st.session_state.demo_email_code} "
-               f"— valid for 5 minutes)")
+    st.caption(f"Your confirmation code: {st.session_state.demo_email_code} (valid for 5 minutes)")
 
     entered_code = st.text_input("Enter the 6-digit confirmation code", max_chars=6, key="email_code_input")
     col1, col2 = st.columns(2)
@@ -130,7 +129,7 @@ def otp_screen():
 
     demo_otp = st.session_state.users[st.session_state.username]["otp"]
     if demo_otp:
-        st.caption(f"(Demo mode: your OTP is {demo_otp} — valid for 90 seconds)")
+        st.caption(f"Your OTP: {demo_otp} (valid for 90 seconds)")
     else:
         # The previous OTP expired (or was already used) and none has been
         # generated since. Without this branch the app would show "your OTP
@@ -142,7 +141,12 @@ def otp_screen():
 
     with col1:
         if st.button("Verify OTP", type="primary"):
-            users = st.session_state.users
+            # Reload fresh from disk before verifying. verify_otp() saves the
+            # whole `users` dict back to disk as part of clearing the OTP, so
+            # verifying against a stale cached copy would silently overwrite
+            # (and lose) any accounts other people registered in their own
+            # sessions since this session last refreshed.
+            users = load_users()
             success, message = verify_otp(users, st.session_state.username, entered)
             if success:
                 result_success, result_message = action["execute"](users)
@@ -159,7 +163,7 @@ def otp_screen():
 
     with col2:
         if st.button("Resend OTP"):
-            users = st.session_state.users
+            users = load_users()  # fresh, for the same reason as above
             generate_otp(users, st.session_state.username)
             refresh_users()
             st.rerun()
@@ -176,8 +180,9 @@ def start_otp_flow(description: str, execute_fn):
     Generate an OTP and stage an action for confirmation.
     execute_fn: a function taking `users` dict and returning (bool, str).
     """
-    users = st.session_state.users
+    users = load_users()  # fresh, so this save doesn't clobber other users' concurrent changes
     generate_otp(users, st.session_state.username)
+    refresh_users()
     st.session_state.pending_action = {"description": description, "execute": execute_fn}
     st.session_state.otp_stage = True
     st.rerun()
@@ -279,13 +284,27 @@ def transfer_page():
         recipient = st.text_input("Recipient username")
         amount = st.number_input("Amount", min_value=0.0, step=10.0, key="other_amount")
         if st.button("Continue to OTP"):
-            if recipient not in st.session_state.users:
+            # Reload fresh from disk: other users may have registered in their
+            # own sessions since this session's copy of `users` was last loaded,
+            # so checking against the stale in-memory copy could wrongly say
+            # a real recipient "does not exist".
+            current_users = load_users()
+            if recipient not in current_users:
                 st.error("Recipient does not exist.")
+            elif recipient == st.session_state.username:
+                st.error("Cannot transfer to yourself using this option.")
             elif amount <= 0:
                 st.error("Enter a valid amount.")
             else:
                 def execute(users, recipient=recipient, amount=amount):
-                    return transfer_other(users, st.session_state.username, recipient, amount)
+                    # Reload fresh again at execution time (right after OTP
+                    # verification) so the transfer runs against the latest
+                    # data on disk instead of whatever was cached when the
+                    # OTP screen first opened. otp_screen() reloads session
+                    # state from disk again right after this runs, so we
+                    # don't need to sync `users` back manually here.
+                    fresh_users = load_users()
+                    return transfer_other(fresh_users, st.session_state.username, recipient, amount)
                 start_otp_flow(f"Transfer ${amount:.2f} to {recipient}", execute)
 
 
@@ -390,7 +409,7 @@ def profile_page():
     st.write(f"**Email:** {user.get('email', 'N/A')}")
     st.write(f"**Phone:** {user.get('phone_number') or 'Not provided'}")
     st.write(f"**Address:** {user.get('address') or 'Not provided'}")
-    st.write(f"**Routing Number:** {user.get('routing_number', 'N/A')} (same for every account, simulated)")
+    st.write(f"**Routing Number:** {user.get('routing_number', 'N/A')}")
 
     st.divider()
     st.subheader("Account Numbers")
