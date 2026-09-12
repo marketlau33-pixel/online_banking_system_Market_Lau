@@ -5,12 +5,20 @@ A Streamlit-based simulation of an online banking platform, built for BMCS2713
 
 ## Features
 
-- User registration/login with hashed passwords (SHA-256)
+- User registration with email, phone number, and home address (phone/address
+  are simulated/cosmetic only — not used for real verification)
+- Simulated email confirmation (6-digit code, 5-minute expiry) required before
+  a new account can log in
+- Password confirmation field on registration, hashed passwords (SHA-256)
 - Account lockout after 3 failed login attempts
-- OTP verification (45-second expiry) required for money-leaving transactions
+- OTP verification (6-digit, 90-second expiry, with a Resend OTP option)
+  required for money-leaving transactions
 - Multi-account support per user: Checking, Savings, and a Credit Card
   (credit line with limit and owed balance, separate from spendable cash)
-- Money transfer: between own accounts (no OTP) and to other users (OTP required)
+- Each account has a unique 10-digit account number; every user shares the
+  same simulated routing number — both shown on the Dashboard and Profile
+- Money transfer: between own accounts (no OTP) and to other users by
+  username (OTP required)
 - Bill payment across multiple categories
 - Credit card purchases (with limit enforcement) and balance payoff
 - Deposit functionality
@@ -22,6 +30,7 @@ A Streamlit-based simulation of an online banking platform, built for BMCS2713
 - Simulated credit score (300-850), derived from credit utilization, payment
   history, income-to-spending ratio, and account activity
 - Spending-by-category chart
+- Profile page: view contact info and account numbers, change password
 
 ## Setup
 
@@ -31,6 +40,9 @@ streamlit run app.py
 ```
 
 ## Demo Accounts
+
+Both accounts are pre-verified (email confirmation already completed) so you
+can log in immediately.
 
 | Username | Password    |
 |----------|-------------|
