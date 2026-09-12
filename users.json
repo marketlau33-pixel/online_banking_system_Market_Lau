@@ -1,19 +1,29 @@
 {
   "alice": {
     "password_hash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "email": "alice@example.com",
+    "phone_number": "012-111-2222",
+    "address": "1 Jalan Demo, KL",
+    "email_verified": true,
+    "email_code": null,
+    "email_code_expiry": null,
     "failed_attempts": 0,
     "locked": false,
+    "routing_number": "021000089",
     "accounts": {
       "checking": {
-        "balance": 2600.0
+        "balance": 2500.0,
+        "account_number": "6506262002"
       },
       "savings": {
-        "balance": 8000.0
+        "balance": 8000.0,
+        "account_number": "7656517930"
       },
       "credit_card": {
-        "limit": 3000.0,
+        "limit": 2000.0,
         "owed": 450.0,
-        "due_date": "2026-09-25"
+        "due_date": null,
+        "account_number": "5952402554"
       }
     },
     "transactions": [
@@ -63,19 +73,29 @@
   },
   "bob": {
     "password_hash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "email": "bob@example.com",
+    "phone_number": "012-333-4444",
+    "address": "2 Jalan Contoh, PJ",
+    "email_verified": true,
+    "email_code": null,
+    "email_code_expiry": null,
     "failed_attempts": 0,
     "locked": false,
+    "routing_number": "021000089",
     "accounts": {
       "checking": {
-        "balance": 1200.0
+        "balance": 1200.0,
+        "account_number": "8947165379"
       },
       "savings": {
-        "balance": 3000.0
+        "balance": 3000.0,
+        "account_number": "4807445863"
       },
       "credit_card": {
         "limit": 1500.0,
         "owed": 900.0,
-        "due_date": "2026-09-18"
+        "due_date": null,
+        "account_number": "3876669418"
       }
     },
     "transactions": [

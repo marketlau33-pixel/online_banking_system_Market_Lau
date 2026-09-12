@@ -75,12 +75,15 @@ def login_screen():
         else:
             new_username = st.text_input("Choose a username", key="reg_username")
             new_email = st.text_input("Email address", key="reg_email")
+            new_phone = st.text_input("Phone number (optional, simulated only)", key="reg_phone")
+            new_address = st.text_input("Home address (optional, simulated only)", key="reg_address")
             new_password = st.text_input("Choose a password", type="password", key="reg_password")
             confirm_password = st.text_input("Confirm password", type="password", key="reg_confirm_password")
             if st.button("Create Account"):
                 users = load_users()
                 success, message = register_user(
-                    users, new_username, new_password, confirm_password, new_email
+                    users, new_username, new_password, confirm_password, new_email,
+                    phone_number=new_phone, address=new_address,
                 )
                 if success:
                     code = generate_email_code(users, new_username)
@@ -126,10 +129,16 @@ def otp_screen():
     st.info(f"Confirm this action: **{action['description']}**")
 
     demo_otp = st.session_state.users[st.session_state.username]["otp"]
-    st.caption(f"(Demo mode: your OTP is {demo_otp} — valid for 45 seconds)")
+    if demo_otp:
+        st.caption(f"(Demo mode: your OTP is {demo_otp} — valid for 90 seconds)")
+    else:
+        # The previous OTP expired (or was already used) and none has been
+        # generated since. Without this branch the app would show "your OTP
+        # is None" with no way to recover except cancelling the transaction.
+        st.warning("Your previous OTP has expired. Click 'Resend OTP' to get a new one.")
 
     entered = st.text_input("Enter the 6-digit OTP", max_chars=6)
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         if st.button("Verify OTP", type="primary"):
@@ -149,6 +158,13 @@ def otp_screen():
                 st.error(message)
 
     with col2:
+        if st.button("Resend OTP"):
+            users = st.session_state.users
+            generate_otp(users, st.session_state.username)
+            refresh_users()
+            st.rerun()
+
+    with col3:
         if st.button("Cancel"):
             st.session_state.pending_action = None
             st.session_state.otp_stage = False
@@ -175,10 +191,15 @@ def dashboard_page():
     st.header("Dashboard")
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Checking", f"${user['accounts']['checking']['balance']:.2f}")
-    col2.metric("Savings", f"${user['accounts']['savings']['balance']:.2f}")
+    checking = user["accounts"]["checking"]
+    savings = user["accounts"]["savings"]
     card = user["accounts"]["credit_card"]
+    col1.metric("Checking", f"${checking['balance']:.2f}")
+    col1.caption(f"Acct # {checking.get('account_number', 'N/A')}")
+    col2.metric("Savings", f"${savings['balance']:.2f}")
+    col2.caption(f"Acct # {savings.get('account_number', 'N/A')}")
     col3.metric("Credit Card Owed", f"${card['owed']:.2f}", f"Limit: ${card['limit']:.2f}")
+    col3.caption(f"Acct # {card.get('account_number', 'N/A')}")
 
     st.divider()
 
@@ -364,8 +385,20 @@ def history_page():
 # ---------------------------------------------------------------------------
 def profile_page():
     st.header("Profile")
+    user = st.session_state.users[st.session_state.username]
     st.write(f"**Username:** {st.session_state.username}")
+    st.write(f"**Email:** {user.get('email', 'N/A')}")
+    st.write(f"**Phone:** {user.get('phone_number') or 'Not provided'}")
+    st.write(f"**Address:** {user.get('address') or 'Not provided'}")
+    st.write(f"**Routing Number:** {user.get('routing_number', 'N/A')} (same for every account, simulated)")
 
+    st.divider()
+    st.subheader("Account Numbers")
+    for acc_name in ("checking", "savings", "credit_card"):
+        acc_no = user["accounts"][acc_name].get("account_number", "N/A")
+        st.write(f"**{acc_name.replace('_', ' ').title()}:** {acc_no}")
+
+    st.divider()
     st.subheader("Change Password")
     old_pw = st.text_input("Current password", type="password")
     new_pw = st.text_input("New password", type="password")

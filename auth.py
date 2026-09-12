@@ -12,8 +12,9 @@ from datetime import datetime, timedelta
 
 DATA_FILE = "users.json"
 MAX_FAILED_ATTEMPTS = 3
-OTP_VALID_SECONDS = 45
+OTP_VALID_SECONDS = 90
 EMAIL_CODE_VALID_SECONDS = 300
+ROUTING_NUMBER = "021000089"  # cosmetic: same for every account, like a real bank's routing number
 
 
 def load_users():
@@ -35,11 +36,34 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def register_user(users: dict, username: str, password: str, confirm_password: str, email: str):
+def generate_account_number(users: dict, reserved: set = None) -> str:
+    """
+    Generate a 10-digit account number, checked against existing accounts for
+    uniqueness. `reserved` lets a caller avoid collisions with numbers it has
+    already generated in the same batch but not yet saved into `users`.
+    """
+    reserved = reserved or set()
+    while True:
+        candidate = "".join(random.choices(string.digits, k=10))
+        if candidate in reserved:
+            continue
+        collision = any(
+            acc.get("account_number") == candidate
+            for u in users.values()
+            for acc in u.get("accounts", {}).values()
+        )
+        if not collision:
+            return candidate
+
+
+def register_user(users: dict, username: str, password: str, confirm_password: str, email: str,
+                   phone_number: str = "", address: str = ""):
     """
     Create a new user with default Checking, Savings, and Credit Card accounts.
     The account is created in an unverified state (email_verified=False) and
     cannot log in until the email confirmation code is verified.
+    phone_number and address are simulated/cosmetic only; they are not used
+    for real verification or communication anywhere in the system.
     Returns (success: bool, message: str).
     """
     if not username or not password or not email:
@@ -51,18 +75,26 @@ def register_user(users: dict, username: str, password: str, confirm_password: s
     if "@" not in email or "." not in email.split("@")[-1]:
         return False, "Please enter a valid email address."
 
+    checking_no = generate_account_number(users)
+    savings_no = generate_account_number(users, reserved={checking_no})
+    credit_no = generate_account_number(users, reserved={checking_no, savings_no})
+
     users[username] = {
         "password_hash": hash_password(password),
         "email": email,
+        "phone_number": phone_number,
+        "address": address,
         "email_verified": False,
         "email_code": None,
         "email_code_expiry": None,
         "failed_attempts": 0,
         "locked": False,
+        "routing_number": ROUTING_NUMBER,
         "accounts": {
-            "checking": {"balance": 0.0},
-            "savings": {"balance": 0.0},
-            "credit_card": {"limit": 2000.0, "owed": 0.0, "due_date": None},
+            "checking": {"balance": 0.0, "account_number": checking_no},
+            "savings": {"balance": 0.0, "account_number": savings_no},
+            "credit_card": {"limit": 2000.0, "owed": 0.0, "due_date": None,
+                             "account_number": credit_no},
         },
         "transactions": [],
         "otp": None,
